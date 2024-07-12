@@ -8,7 +8,7 @@ int main()
 	scanf("%s", path);
 
     FILE *fIn = fopen(path, "rb");
-    FILE *fOut = fopen("tiger_gray.bmp", "wb");
+    FILE *fOut = fopen("greyscaled.bmp", "wb");
     if (!fIn || !fOut)
     {
         printf("File error.\n");
