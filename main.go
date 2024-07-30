@@ -89,9 +89,7 @@ func main() {
         // Draw the manipulated image with zoom
         rl.DrawTextureEx(texture, position, 0, float32(zoomLevel), rl.White)
 
-        // Draw zoom level
-        rl.DrawText("Zoom Level: "+formatFloat(zoomLevel, 1), 10, 10, 20, rl.Black)
-
+        
         rl.EndDrawing()
     }
 }
@@ -101,8 +99,4 @@ func manipulatePixelColor(c color.RGBA) rl.Color {
     return rl.Color{255 - c.R, 255 - c.G, 255 - c.B, c.A}
 }
 
-// Helper function to format float with a specific precision
-func formatFloat(n float64, precision int) string {
-    format := "%." + string('0'+precision) + "f"
-    return fmt.Sprintf(format, n)
-}
+
