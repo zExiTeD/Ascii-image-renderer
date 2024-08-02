@@ -1,102 +1,130 @@
 package main
 
 import (
-    "image"
-    "image/color"
-    "image/png"
-    "os"
-
-    rl "github.com/gen2brain/raylib-go/raylib"
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"log"
+	"math"
+	"os"
 )
 
+
+
+var AsciiSet = " .:co#%?@PO"
+//var AsciiSet = "PO@?%#co:. "
+var count uint32 = 0
+var ScalingFac = 16
+
+
+func luminous_intensity(img image.Image,x int,y int) (float64,color.RGBA) {
+	var redsum uint32 = 0.0
+	var greensum uint32 =0.0
+	var bluesum uint32 =0.0
+	var col color.RGBA
+
+	for i:=0;i<=(y+ScalingFac);i++{
+		for j:=0;j<=(x+ScalingFac);j++{
+			col := img.At(x,y)
+			r,g,b,_ := col.RGBA()
+			 
+			r = r >> 8
+			g	= g >> 8
+			b = b >> 8
+
+		//	fmt.Printf("r,g,b ---> %v  , %v ,%v \n",r,g,b)
+			redsum = redsum+r
+			bluesum = bluesum+b
+			greensum = greensum+g
+			count++
+		}
+	}
+
+	redsum 	 = redsum   /	count 
+	greensum = greensum / count
+	bluesum  = bluesum  / count
+
+	//fmt.Printf("R %f \n",redSum)
+
+	Y := (0.2126*float64(redsum)) + (0.7152*float64(greensum)) + (0.0722*float64(bluesum))
+	col.R = uint8(redsum)
+	col.G = uint8(greensum)
+	col.B = uint8(greensum)
+	col.A = 0
+	
+	//fmt.Printf("Y %f %v \n",Y,count)
+	count = 0
+	return Y,col
+}
+
+func rgbTo256(r, g, b int) int {
+    // Calculate the color code using a formula
+    r = int(math.Round(float64(r) / 255 * 5))
+    g = int(math.Round(float64(g) / 255 * 5))
+    b = int(math.Round(float64(b) / 255 * 5))
+    return 16 + 36*r + 6*g + b
+}
+
+
 func main() {
-    const screenWidth, screenHeight = 800, 600
+	 // red := "\033[31m"
+   // green := "\033[32m"
+   // yellow := "\033[33m"
+   // blue := "\033[34m"
+   // reset := "\033[0m"
 
-    // Initialize the window
-    rl.InitWindow(screenWidth, screenHeight, "Open Image Pixel by Pixel with Zoom")
-    defer rl.CloseWindow()
+	fmt.Print("\x1b[38;5;196m [USAGE] ./program <filepath> \x1b[0m \n")
+	filepathname:=os.Args[1]	
 
-    // Load the image using the png package
-    imagePath := "path/to/your/image.png"
-    file, err := os.Open(imagePath)
-    if err != nil {
-        panic(err)
-    }
-    defer file.Close()
+	fmt.Printf("Image name/Path --> %s \n",string(filepathname))
+	
+	File,err:= os.Open(filepathname)	
+	if err != nil {
+		log.Fatal("[USAGE] ./program <filepath>")
+	}
+	defer File.Close()
 
-    img, err := png.Decode(file)
-    if err != nil {
-        panic(err)
-    }
+	ImgFile , err := png.Decode(File)
+	if (err!=nil){
+		fmt.Print("[ERROR] : File couldn't be Loaded \n",err)
+	}
 
-    // Create a new Raylib image
-    width, height := img.Bounds().Dx(), img.Bounds().Dy()
-    rayImage := rl.GenImageColor(int32(width), int32(height), rl.RayWhite)
+	ImageWidth:=ImgFile.Bounds().Max.X
+	Imageheight:= ImgFile.Bounds().Max.Y 
 
-    // Access and manipulate pixels
-    for y := 0; y < height; y++ {
-        for x := 0; x < width; x++ {
-            pixel := img.At(x, y).(color.RGBA)
-            newColor := manipulatePixelColor(pixel)
-            rl.ImageDrawPixel(rayImage, int32(x), int32(y), newColor)
-        }
-    }
+	fmt.Printf("Image Dimensions : %v x %v \n",Imageheight,ImageWidth)
 
-    // Create a texture from the Raylib image
-    texture := rl.LoadTextureFromImage(rayImage)
-    defer rl.UnloadTexture(texture)
+	for y:=0;y<=Imageheight;y++ {
+		for x:=0;x<=ImageWidth;x++{
+			Y,col:=luminous_intensity(ImgFile,x,y)
+			
+			index := int(Y*10/256.0)
 
-    // Initial zoom level and position
-    zoomLevel := 1.0
-    zoomStep := 0.1
-    position := rl.NewVector2(0, 0)
+			a :=AsciiSet[index]
+			
+			r,g,b,_:= col.RGBA()
+			r = r >> 8
+			g	= g >> 8 
+			b = b >> 8
+			//colorCode := rgbTo256(int(r),int(g),int(b))
 
-    // Main game loop
-    for !rl.WindowShouldClose() {
-        // Handle zoom
-        if rl.IsKeyPressed(rl.KeyUp) {
-            zoomLevel += zoomStep
-        }
-        if rl.IsKeyPressed(rl.KeyDown) {
-            zoomLevel -= zoomStep
-            if zoomLevel < zoomStep {
-                zoomLevel = zoomStep
-            }
-        }
+			//fmt.Print(index)
+			
+			//  fmt.Printf("\n %v %v %v  \n", r, g, b)  \x1b[48;5;16mHello \x1b[0m
+				fmt.Printf("\x1b[48;5;16m\x1b[38;2;%v;%v;%vm %s \x1b[0m\x1b[0m",r,g,b,string(a) )			
 
-        // Get mouse wheel movement for zoom
-        wheel := rl.GetMouseWheelMove()
-        if wheel > 0 {
-            zoomLevel += zoomStep
-        } else if wheel < 0 {
-            zoomLevel -= zoomStep
-            if zoomLevel < zoomStep {
-                zoomLevel = zoomStep
-            }
-        }
+			Y = 0.0
+		}
+		fmt.Print("\n")
+	}
 
-        // Update position based on mouse dragging
-        if rl.IsMouseButtonDown(rl.MouseLeftButton) {
-            mouseDelta := rl.GetMouseDelta()
-            position.X += mouseDelta.X
-            position.Y += mouseDelta.Y
-        }
-
-        // Begin drawing
-        rl.BeginDrawing()
-        rl.ClearBackground(rl.RayWhite)
-
-        // Draw the manipulated image with zoom
-        rl.DrawTextureEx(texture, position, 0, float32(zoomLevel), rl.White)
-
-        
-        rl.EndDrawing()
-    }
 }
 
-// Manipulate the pixel color (example: invert colors)
-func manipulatePixelColor(c color.RGBA) rl.Color {
-    return rl.Color{255 - c.R, 255 - c.G, 255 - c.B, c.A}
-}
+
+
+
+
+
 
 
