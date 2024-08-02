@@ -58,15 +58,6 @@ func luminous_intensity(img image.Image,x int,y int) (float64,color.RGBA) {
 	return Y,col
 }
 
-func rgbTo256(r, g, b int) int {
-    // Calculate the color code using a formula
-    r = int(math.Round(float64(r) / 255 * 5))
-    g = int(math.Round(float64(g) / 255 * 5))
-    b = int(math.Round(float64(b) / 255 * 5))
-    return 16 + 36*r + 6*g + b
-}
-
-
 func main() {
 	 // red := "\033[31m"
    // green := "\033[32m"
@@ -107,10 +98,7 @@ func main() {
 			r = r >> 8
 			g	= g >> 8 
 			b = b >> 8
-			//colorCode := rgbTo256(int(r),int(g),int(b))
-
-			//fmt.Print(index)
-			
+		
 			//  fmt.Printf("\n %v %v %v  \n", r, g, b)  \x1b[48;5;16mHello \x1b[0m
 				fmt.Printf("\x1b[48;5;16m\x1b[38;2;%v;%v;%vm %s \x1b[0m\x1b[0m",r,g,b,string(a) )			
 
