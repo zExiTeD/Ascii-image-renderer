@@ -10,97 +10,106 @@ import (
 	"os"
 )
 
-
-
 var AsciiSet = " .:co#%?@PO"
-//var AsciiSet = "PO@?%#co:. "
+
+// var AsciiSet = "PO@?%#co:. "
 var count uint32 = 0
 var ScalingFac = 16
 
-
-func luminous_intensity(img image.Image,x int,y int) (float64,color.RGBA) {
+func luminous_intensity(img image.Image, x int, y int) (float64, color.RGBA) {
 	var redsum uint32 = 0.0
-	var greensum uint32 =0.0
-	var bluesum uint32 =0.0
+	var greensum uint32 = 0.0
+	var bluesum uint32 = 0.0
 	var col color.RGBA
 
-	for i:=0;i<=(y+ScalingFac);i++{
-		for j:=0;j<=(x+ScalingFac);j++{
-			col := img.At(x,y)
-			r,g,b,_ := col.RGBA()
-			 
+	for i := 0; i <= (y + ScalingFac); i++ {
+		for j := 0; j <= (x + ScalingFac); j++ {
+			col := img.At(x, y)
+			r, g, b, _ := col.RGBA()
+
 			r = r >> 8
-			g	= g >> 8
+			g = g >> 8
 			b = b >> 8
 
-		//	fmt.Printf("r,g,b ---> %v  , %v ,%v \n",r,g,b)
-			redsum = redsum+r
-			bluesum = bluesum+b
-			greensum = greensum+g
+			//	fmt.Printf("r,g,b ---> %v  , %v ,%v \n",r,g,b)
+			redsum = redsum + r
+			bluesum = bluesum + b
+			greensum = greensum + g
 			count++
 		}
 	}
 
-	redsum 	 = redsum   /	count 
+	redsum = redsum / count
 	greensum = greensum / count
-	bluesum  = bluesum  / count
+	bluesum = bluesum / count
 
 	//fmt.Printf("R %f \n",redSum)
 
-	Y := (0.2126*float64(redsum)) + (0.7152*float64(greensum)) + (0.0722*float64(bluesum))
+	Y := (0.2126 * float64(redsum)) + (0.7152 * float64(greensum)) + (0.0722 * float64(bluesum))
 	col.R = uint8(redsum)
 	col.G = uint8(greensum)
 	col.B = uint8(greensum)
 	col.A = 0
-	
+
 	//fmt.Printf("Y %f %v \n",Y,count)
 	count = 0
-	return Y,col
+	return Y, col
+}
+
+func rgbTo256(r, g, b int) int {
+	// Calculate the color code using a formula
+	r = int(math.Round(float64(r) / 255 * 5))
+	g = int(math.Round(float64(g) / 255 * 5))
+	b = int(math.Round(float64(b) / 255 * 5))
+	return 16 + 36*r + 6*g + b
 }
 
 func main() {
-	 // red := "\033[31m"
-   // green := "\033[32m"
-   // yellow := "\033[33m"
-   // blue := "\033[34m"
-   // reset := "\033[0m"
+	// red := "\033[31m"
+	// green := "\033[32m"
+	// yellow := "\033[33m"
+	// blue := "\033[34m"
+	// reset := "\033[0m"
 
 	fmt.Print("\x1b[38;5;196m [USAGE] ./program <filepath> \x1b[0m \n")
-	filepathname:=os.Args[1]	
+	filepathname := os.Args[1]
 
-	fmt.Printf("Image name/Path --> %s \n",string(filepathname))
-	
-	File,err:= os.Open(filepathname)	
+	fmt.Printf("Image name/Path --> %s \n", string(filepathname))
+
+	File, err := os.Open(filepathname)
 	if err != nil {
 		log.Fatal("[USAGE] ./program <filepath>")
 	}
 	defer File.Close()
 
-	ImgFile , err := png.Decode(File)
-	if (err!=nil){
-		fmt.Print("[ERROR] : File couldn't be Loaded \n",err)
+	ImgFile, err := png.Decode(File)
+	if err != nil {
+		fmt.Print("[ERROR] : File couldn't be Loaded \n", err)
 	}
 
-	ImageWidth:=ImgFile.Bounds().Max.X
-	Imageheight:= ImgFile.Bounds().Max.Y 
+	ImageWidth := ImgFile.Bounds().Max.X
+	Imageheight := ImgFile.Bounds().Max.Y
 
-	fmt.Printf("Image Dimensions : %v x %v \n",Imageheight,ImageWidth)
+	fmt.Printf("Image Dimensions : %v x %v \n", Imageheight, ImageWidth)
 
-	for y:=0;y<=Imageheight;y++ {
-		for x:=0;x<=ImageWidth;x++{
-			Y,col:=luminous_intensity(ImgFile,x,y)
-			
-			index := int(Y*10/256.0)
+	for y := 0; y <= Imageheight; y++ {
+		for x := 0; x <= ImageWidth; x++ {
+			Y, col := luminous_intensity(ImgFile, x, y)
 
-			a :=AsciiSet[index]
-			
-			r,g,b,_:= col.RGBA()
+			index := int(Y * 10 / 256.0)
+
+			a := AsciiSet[index]
+
+			r, g, b, _ := col.RGBA()
 			r = r >> 8
-			g	= g >> 8 
+			g = g >> 8
 			b = b >> 8
-		
+			//colorCode := rgbTo256(int(r),int(g),int(b))
+
+			//fmt.Print(index)
+
 			//  fmt.Printf("\n %v %v %v  \n", r, g, b)  \x1b[48;5;16mHello \x1b[0m
-				fmt.Printf("\x1b[48;5;16m\x1b[38;2;%v;%v;%vm %s \x1b[0m\x1b[0m",r,g,b,string(a) )			
+			fmt.Printf("\x1b[48;5;16m\x1b[38;2;%v;%v;%vm %s \x1b[0m\x1b[0m", r, g, b, string(a))
 
 			Y = 0.0
 		}
@@ -108,11 +117,3 @@ func main() {
 	}
 
 }
-
-
-
-
-
-
-
-
